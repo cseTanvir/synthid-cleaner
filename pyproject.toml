@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Strip C2PA/EXIF metadata and disrupt imperceptible SynthID watermarks on AI-generated images."
 readme = "README.md"
 requires-python = ">=3.8"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
     { name = "Md Tanvir Hossain", email = "tanvirhossain1994@gmail.com" }
 ]

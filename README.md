@@ -24,22 +24,57 @@ A lightweight, local tool to sanitize AI-generated images by purging C2PA metada
 
 ---
 
-## Installation
+## Installation & Building
 
-### Clone the Repository
+### 1. Install CLI Command (Recommended)
+
+To register the `synthid-cleaner` command directly in your terminal/PATH:
+
+#### In a virtual environment / current Python:
 ```bash
 git clone https://github.com/cseTanvir/synthid-cleaner.git
 cd synthid-cleaner
+pip install -e .
+```
+Now `synthid-cleaner` is available anywhere in your active environment:
+```bash
+synthid-cleaner --gui
 ```
 
-### Install Dependencies
-Using `pip`:
+#### Globally with `pipx` or `uv tool`:
 ```bash
-pip install -r requirements.txt
+# Isolated global CLI installation
+pipx install .
+
+# Or using uv:
+uv tool install .
 ```
-Or install as a local package:
+
+---
+
+### 2. Building Packages & Binaries
+
+#### Build Distribution Packages (Wheel & sdist)
+Generate `.whl` and `.tar.gz` packages in `dist/`:
 ```bash
-pip install .
+# Using uv (fastest)
+uv build
+
+# Or standard build tool
+pip install build
+python -m build
+```
+
+#### Build Standalone Executable (Zero Python dependency)
+To package everything into a single standalone binary executable (`dist/synthid-cleaner`):
+```bash
+# Install pyinstaller and build
+pip install pyinstaller
+pyinstaller synthid-cleaner.spec
+```
+The resulting executable in `dist/synthid-cleaner` runs independently without needing Python or external libraries:
+```bash
+./dist/synthid-cleaner --gui
 ```
 
 ---
