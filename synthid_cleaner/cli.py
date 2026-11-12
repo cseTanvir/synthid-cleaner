@@ -21,13 +21,16 @@ Examples:
   synthid-cleaner
   synthid-cleaner --gui
 
-  # Clean a single image
+  # Clean a single image (auto-preserves JPG/PNG to prevent file size inflation)
   synthid-cleaner -i photo.jpg
-  synthid-cleaner -i photo.jpg -o cleaned.png --noise 1.4
+
+  # Clean and export as high-quality WebP or JPEG
+  synthid-cleaner -i photo.png -f webp -q 95
+  synthid-cleaner -i photo.jpg -o cleaned.jpg -q 90
 
   # Batch clean an entire directory
   synthid-cleaner --batch ./input_folder --output-dir ./cleaned_folder
-  synthid-cleaner -b ./inputs -r  # Recursive scan
+  synthid-cleaner -b ./inputs -r --format auto  # Recursive scan
         """,
     )
 
@@ -40,6 +43,19 @@ Examples:
         "-o", "--output",
         type=str,
         help="Path to output image file or output directory.",
+    )
+    parser.add_argument(
+        "-f", "--format",
+        type=str,
+        default="auto",
+        choices=["auto", "png", "jpg", "jpeg", "webp"],
+        help="Output image format ('auto', 'png', 'jpg', 'webp'). Default: 'auto' (preserves input format to prevent file size increase).",
+    )
+    parser.add_argument(
+        "-q", "--quality",
+        type=int,
+        default=95,
+        help="Compression quality (1-100) for lossy formats like JPEG/WebP (default: 95).",
     )
     parser.add_argument(
         "-n", "--noise",
@@ -86,7 +102,12 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.gui:
-        run_gui(noise_level=args.noise, output_dir=args.output)
+        run_gui(
+            noise_level=args.noise,
+            output_dir=args.output,
+            output_format=args.format,
+            quality=args.quality,
+        )
         return
 
     if not args.input:
@@ -105,7 +126,7 @@ def main() -> None:
         out_dir = Path(args.output) if args.output else input_path
         print(f"[*] Batch processing directory: {input_path}")
         print(f"[*] Target output directory: {out_dir}")
-        print(f"[*] Noise variance level: {args.noise}")
+        print(f"[*] Format: {args.format} | Quality: {args.quality} | Noise level: {args.noise}")
 
         def log_progress(current: int, total: int, in_f: Path, out_f: Path):
             print(f"[{current}/{total}] Cleaned: {in_f.name} -> {out_f.name}")
@@ -114,6 +135,8 @@ def main() -> None:
             input_dir=input_path,
             output_dir=out_dir,
             noise_level=args.noise,
+            output_format=args.format,
+            quality=args.quality,
             recursive=args.recursive,
             progress_callback=log_progress,
         )
@@ -128,6 +151,8 @@ def main() -> None:
             input_path=input_path,
             output_path=out_path,
             noise_level=args.noise,
+            output_format=args.format,
+            quality=args.quality,
         )
         print(f"[+] Success! Cleaned image saved to: {saved}")
     except Exception as e:

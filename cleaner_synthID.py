@@ -15,16 +15,26 @@ import numpy as np
 from PIL import Image
 
 
-def sanitize_image_high_quality(input_path, output_path, noise_level=1.2):
+def sanitize_image_high_quality(input_path, output_path=None, noise_level=1.2, quality=95):
     """
-    Locally removes C2PA data and breaks hidden SynthID patterns.
+    Locally removes C2PA data and breaks hidden SynthID patterns while preserving format/file size.
     """
+    in_path = Path(input_path)
+    if output_path is None:
+        ext = in_path.suffix.lower()
+        if ext not in (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"):
+            ext = ".png"
+        output_path = in_path.parent / f"{in_path.stem}_clean{ext}"
+    else:
+        output_path = Path(output_path)
+
+    out_ext = output_path.suffix.lower()
+
     # 1. Open image and drop C2PA/EXIF data by extracting only the raw pixel canvas
-    with Image.open(input_path) as img:
-        # Check for transparency
+    with Image.open(in_path) as img:
         has_alpha = img.mode in ("RGBA", "LA") or ("transparency" in img.info)
 
-        if has_alpha:
+        if has_alpha and out_ext not in (".jpg", ".jpeg"):
             img = img.convert("RGBA")
             rgba_data = np.array(img, dtype=np.float32)
             rgb_channels = rgba_data[:, :, :3]
@@ -44,9 +54,18 @@ def sanitize_image_high_quality(input_path, output_path, noise_level=1.2):
             disrupted_data = np.clip(data + noise, 0, 255).astype(np.uint8)
             clean_img = Image.fromarray(disrupted_data, "RGB")
 
-        # 3. Save as a lossless PNG to preserve 100% sharp details
-        clean_img.save(output_path, "PNG", optimize=True)
+        # 3. Save matching the target format
+        if out_ext in (".jpg", ".jpeg"):
+            clean_img.save(str(output_path), "JPEG", quality=quality, optimize=True)
+        elif out_ext == ".webp":
+            clean_img.save(str(output_path), "WEBP", quality=quality)
+        elif out_ext == ".png":
+            clean_img.save(str(output_path), "PNG", optimize=True)
+        else:
+            clean_img.save(str(output_path))
+
         print(f"[+] Success! Cleaned file saved to: {output_path}")
+    return output_path
 
 
 def select_and_process_file():
@@ -69,9 +88,11 @@ def select_and_process_file():
         print("[-] Cancelled: No file selected.")
         return
 
-    dir_name, file_name = os.path.split(input_path)
-    base_name, _ = os.path.splitext(file_name)
-    output_path = os.path.join(dir_name, f"{base_name}_clean.png")
+    in_path = Path(input_path)
+    ext = in_path.suffix.lower()
+    if ext not in (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"):
+        ext = ".png"
+    output_path = in_path.parent / f"{in_path.stem}_clean{ext}"
 
     print(f"[+] Processing target: {input_path}")
     sanitize_image_high_quality(input_path, output_path)

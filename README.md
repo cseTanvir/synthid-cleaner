@@ -8,6 +8,7 @@ A lightweight, local tool to sanitize AI-generated images by purging C2PA metada
 
 - **Metadata Purge**: Drops all C2PA, EXIF, XMP, and IPTC headers by extracting raw pixel arrays.
 - **Watermark Disruption**: Applies calibrated micro-variance (Gaussian perturbation) to break latent SynthID alignments without human-perceptible degradation.
+- **Format & Size Preservation**: Automatically preserves the input format (`--format auto`) and applies smart compression quality (`--quality 95`) so your cleaned JPEGs/WebPs do not explode in file size.
 - **Dual Interface**: Supports both an interactive graphical file picker (Tkinter GUI) and an automated CLI.
 - **Batch Processing**: Clean entire folders and subdirectories with a single command.
 - **Transparency Preservation**: Handles RGBA images while leaving alpha transparency intact.
@@ -97,21 +98,35 @@ synthid-cleaner --gui
 ```bash
 synthid-cleaner -i /path/to/image.jpg
 ```
-The sanitized file is automatically saved as `image_clean.png`.
+The sanitized file is automatically saved as `image_clean.jpg` (preserving format and compact file size).
+
+#### Output as high-quality WebP or JPEG:
+```bash
+# Convert to WebP for minimal file size
+synthid-cleaner -i photo.png -f webp -q 95
+
+# Export as high-quality JPEG
+synthid-cleaner -i photo.jpg -f jpg -q 92
+```
+
+#### Force lossless PNG output:
+```bash
+synthid-cleaner -i photo.jpg -f png
+```
 
 #### Specify custom output path and noise level:
 ```bash
-synthid-cleaner -i /path/to/image.jpg -o /path/to/output.png --noise 1.5
+synthid-cleaner -i /path/to/image.jpg -o /path/to/output.jpg --noise 1.5
 ```
 
-#### Batch process a folder:
+#### Batch process a folder (preserves each image's native format):
 ```bash
 synthid-cleaner --batch ./input_folder --output-dir ./cleaned_folder
 ```
 
 #### Recursive folder scan:
 ```bash
-synthid-cleaner --batch ./input_folder --output-dir ./cleaned_folder --recursive
+synthid-cleaner --batch ./input_folder --output-dir ./cleaned_folder --recursive --format auto
 ```
 
 ### 3. Python API
@@ -120,12 +135,16 @@ Use directly in your Python code or automation pipelines:
 ```python
 from synthid_cleaner import sanitize_image, batch_sanitize
 
-# Clean a single image
-clean_path = sanitize_image("ai_art.png", "ai_art_clean.png", noise_level=1.2)
+# Clean a single image (auto-preserves input format and optimizes size)
+clean_path = sanitize_image("ai_art.jpg", noise_level=1.2, output_format="auto", quality=95)
 print(f"Sanitized file: {clean_path}")
 
+# Export explicitly to WebP or lossless PNG
+webp_path = sanitize_image("ai_art.jpg", output_format="webp", quality=90)
+png_path = sanitize_image("ai_art.jpg", output_format="png")
+
 # Batch clean a directory
-results = batch_sanitize(input_dir="./gallery", output_dir="./cleaned_gallery")
+results = batch_sanitize(input_dir="./gallery", output_dir="./cleaned_gallery", output_format="auto")
 print(f"Cleaned {len(results)} images.")
 ```
 

@@ -20,7 +20,12 @@ def is_gui_available() -> bool:
     return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
 
 
-def run_gui(noise_level: float = 1.2, output_dir: Optional[str] = None) -> Optional[Path]:
+def run_gui(
+    noise_level: float = 1.2,
+    output_dir: Optional[str] = None,
+    output_format: str = "auto",
+    quality: int = 95,
+) -> Optional[Path]:
     """
     Launches an interactive native file picker to select and sanitize an image.
     """
@@ -59,8 +64,14 @@ def run_gui(noise_level: float = 1.2, output_dir: Optional[str] = None) -> Optio
 
     from .core import sanitize_image, generate_clean_output_path
 
-    out_path = generate_clean_output_path(input_path, output_dir)
+    out_path = generate_clean_output_path(input_path, output_dir, output_format=output_format)
     print(f"[+] Processing target: {input_path}")
-    saved = sanitize_image(input_path, out_path, noise_level=noise_level)
+    saved = sanitize_image(
+        input_path=input_path,
+        output_path=out_path,
+        noise_level=noise_level,
+        output_format=output_format,
+        quality=quality,
+    )
     print(f"[+] Success! Cleaned file saved to: {saved}")
     return saved
