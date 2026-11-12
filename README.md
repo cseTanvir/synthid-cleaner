@@ -1,0 +1,126 @@
+# synthid-cleaner
+
+A lightweight, local tool to sanitize AI-generated images by purging C2PA metadata manifests and disrupting hidden SynthID frequency patterns while keeping visual quality pristine.
+
+---
+
+## Key Features
+
+- **Metadata Purge**: Drops all C2PA, EXIF, XMP, and IPTC headers by extracting raw pixel arrays.
+- **Watermark Disruption**: Applies calibrated micro-variance (Gaussian perturbation) to break latent SynthID alignments without human-perceptible degradation.
+- **Dual Interface**: Supports both an interactive graphical file picker (Tkinter GUI) and an automated CLI.
+- **Batch Processing**: Clean entire folders and subdirectories with a single command.
+- **Transparency Preservation**: Handles RGBA images while leaving alpha transparency intact.
+- **100% Offline & Private**: Runs entirely on your local machine with zero network calls.
+
+---
+
+## Requirements
+
+- Python 3.8 or higher
+- Dependencies:
+  - `numpy >= 1.22.0`
+  - `Pillow >= 9.0.0`
+
+---
+
+## Installation
+
+### Clone the Repository
+```bash
+git clone https://github.com/cseTanvir/synthid-cleaner.git
+cd synthid-cleaner
+```
+
+### Install Dependencies
+Using `pip`:
+```bash
+pip install -r requirements.txt
+```
+Or install as a local package:
+```bash
+pip install .
+```
+
+---
+
+## Usage
+
+### 1. Graphical Interface (GUI)
+Run without flags to open the native image picker dialog:
+```bash
+python main.py
+```
+Or via the CLI tool:
+```bash
+synthid-cleaner --gui
+```
+
+### 2. Command Line (CLI)
+
+#### Clean a single image:
+```bash
+synthid-cleaner -i /path/to/image.jpg
+```
+The sanitized file is automatically saved as `image_clean.png`.
+
+#### Specify custom output path and noise level:
+```bash
+synthid-cleaner -i /path/to/image.jpg -o /path/to/output.png --noise 1.5
+```
+
+#### Batch process a folder:
+```bash
+synthid-cleaner --batch ./input_folder --output-dir ./cleaned_folder
+```
+
+#### Recursive folder scan:
+```bash
+synthid-cleaner --batch ./input_folder --output-dir ./cleaned_folder --recursive
+```
+
+### 3. Python API
+Use directly in your Python code or automation pipelines:
+
+```python
+from synthid_cleaner import sanitize_image, batch_sanitize
+
+# Clean a single image
+clean_path = sanitize_image("ai_art.png", "ai_art_clean.png", noise_level=1.2)
+print(f"Sanitized file: {clean_path}")
+
+# Batch clean a directory
+results = batch_sanitize(input_dir="./gallery", output_dir="./cleaned_gallery")
+print(f"Cleaned {len(results)} images.")
+```
+
+---
+
+## How It Works
+
+1. **Pixel Buffer Isolation**: Loads the image strictly into a raw numerical array (`numpy.float32`), discarding all metadata containers, EXIF headers, and C2PA signatures.
+2. **Harmonic Disruption**: Latent watermarks such as SynthID rely on subtle spatial and frequency-domain correlations. Injecting calibrated Gaussian noise ($\mu=0, \sigma=1.2$) disrupts these imperceptible patterns while staying within less than 0.5% variance of pixel intensity.
+3. **Lossless Encoding**: Re-encodes the sanitized pixel array into lossless PNG format with optimization enabled.
+
+---
+
+## Use Cases
+
+- **Privacy & Metadata Scrubbing**: Remove unwanted device signatures, tracking identifiers, and provenance tags prior to publishing.
+- **Dataset Preprocessing**: Prepare neutral visual datasets for computer vision models without embedded generator fingerprints.
+- **Creative Pipelines**: Integrate into automated image generation workflows to normalize output files.
+
+---
+
+## Running Tests
+
+Run unit tests with `pytest`:
+```bash
+pytest -v
+```
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
