@@ -21,31 +21,52 @@ Examples:
   synthid-cleaner
   synthid-cleaner --gui
 
-  # Clean a single image (auto-preserves JPG/PNG to prevent file size inflation)
-  synthid-cleaner -i photo.jpg
+  # Clean a single image (positional or -i)
+  synthid-cleaner photo.jpg
+  synthid-cleaner -i photo.jpg -o cleaned.jpg
 
-  # Clean and export as high-quality WebP or JPEG
-  synthid-cleaner -i photo.png -f webp -q 95
-  synthid-cleaner -i photo.jpg -o cleaned.jpg -q 90
-
-  # Batch clean an entire directory
-  synthid-cleaner --batch ./input_folder --output-dir ./cleaned_folder
-  synthid-cleaner -b ./inputs -r --format auto  # Recursive scan
+  # Batch clean a folder
+  synthid-cleaner ./images --output-dir ./cleaned_folder
+  synthid-cleaner --batch ./images --output-dir ./cleaned_folder --recursive
+  synthid-cleaner -i ./images -o ./cleaned_folder -r -f webp -q 90
         """,
     )
 
+    # Optional positional argument for direct path input: synthid-cleaner ./images or synthid-cleaner photo.jpg
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default=None,
+        help="Input image file or directory (optional positional argument).",
+    )
     parser.add_argument(
         "-i", "--input",
         type=str,
-        help="Path to an input image or folder (when used with --batch).",
+        default=None,
+        help="Path to an input image or folder.",
     )
     parser.add_argument(
-        "-o", "--output",
+        "-o", "--output", "--output-dir", "-d",
+        dest="output",
         type=str,
+        default=None,
         help="Path to output image file or output directory.",
     )
     parser.add_argument(
-        "-f", "--format",
+        "-b", "--batch",
+        nargs="?",
+        const=True,
+        default=None,
+        help="Batch process an entire directory (can specify directory: --batch ./images or as flag: -b).",
+    )
+    parser.add_argument(
+        "-r", "--recursive",
+        action="store_true",
+        help="Recursively scan subdirectories in batch mode.",
+    )
+    parser.add_argument(
+        "-f", "--format", "--f",
+        dest="format",
         type=str,
         default="auto",
         choices=["auto", "png", "jpg", "jpeg", "webp"],
@@ -64,16 +85,6 @@ Examples:
         help="Noise level std-dev for SynthID perturbation (default: 1.2, recommended: 0.8 - 1.8).",
     )
     parser.add_argument(
-        "-b", "--batch",
-        action="store_true",
-        help="Batch process an entire directory.",
-    )
-    parser.add_argument(
-        "-r", "--recursive",
-        action="store_true",
-        help="Recursively scan subdirectories in batch mode.",
-    )
-    parser.add_argument(
         "-g", "--gui",
         action="store_true",
         help="Force open the interactive graphical file picker.",
@@ -90,7 +101,7 @@ Examples:
 def main() -> None:
     parser = create_parser()
 
-    # If no arguments passed, prefer GUI if display is available, else print help
+    # If no arguments passed at all, prefer GUI if display is available, else print help
     if len(sys.argv) == 1:
         if is_gui_available():
             run_gui()
@@ -110,18 +121,29 @@ def main() -> None:
         )
         return
 
-    if not args.input:
-        parser.error("The -i/--input argument is required when not in --gui mode.")
+    # Resolve input target from positional arg, -i/--input, or --batch argument
+    raw_input = args.input
+    if not raw_input:
+        if isinstance(args.batch, str):
+            raw_input = args.batch
+        elif args.path:
+            raw_input = args.path
 
-    input_path = Path(args.input)
+    if not raw_input:
+        parser.error("Please specify an input image or directory (e.g. synthid-cleaner ./images or -i photo.jpg)")
+
+    input_path = Path(raw_input)
 
     if not input_path.exists():
         sys.exit(f"[-] Error: Input path does not exist: {input_path}")
 
+    # Determine if batch mode should be triggered
+    is_batch = bool(args.batch) or input_path.is_dir()
+
     # Batch directory mode
-    if args.batch or input_path.is_dir():
+    if is_batch:
         if not input_path.is_dir():
-            sys.exit(f"[-] Error: Batch mode specified, but {input_path} is not a directory.")
+            sys.exit(f"[-] Error: Batch mode requested, but '{input_path}' is not a directory.")
 
         out_dir = Path(args.output) if args.output else input_path
         print(f"[*] Batch processing directory: {input_path}")

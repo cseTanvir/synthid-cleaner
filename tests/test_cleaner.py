@@ -6,6 +6,7 @@ import pytest
 from PIL import Image
 
 from synthid_cleaner.core import sanitize_image, batch_sanitize, generate_clean_output_path
+from synthid_cleaner.cli import create_parser
 
 
 @pytest.fixture
@@ -60,7 +61,6 @@ def test_sanitize_jpeg_preserves_format_and_compact_size(temp_dir):
     input_jpg = temp_dir / "photo.jpg"
     create_sample_rgb_image(input_jpg, width=128, height=128, fmt="JPEG")
 
-    # Auto format should save as .jpg
     result_path = sanitize_image(input_jpg, output_format="auto", quality=90, noise_level=1.2)
     assert result_path.suffix.lower() == ".jpg"
     assert result_path.exists()
@@ -98,9 +98,7 @@ def test_sanitize_rgba_image(temp_dir):
 
 def test_generate_clean_output_path(temp_dir):
     img_path = temp_dir / "art.jpg"
-    # Auto should preserve .jpg
     assert generate_clean_output_path(img_path, output_format="auto") == temp_dir / "art_clean.jpg"
-    # Explicit formats
     assert generate_clean_output_path(img_path, output_format="png") == temp_dir / "art_clean.png"
     assert generate_clean_output_path(img_path, output_format="webp") == temp_dir / "art_clean.webp"
 
@@ -120,7 +118,6 @@ def test_batch_sanitize(temp_dir):
     assert len(results) == 3
     for in_p, out_p in results:
         assert out_p.exists()
-        # Each file should preserve its extension
         assert out_p.suffix == in_p.suffix
 
 
@@ -128,3 +125,23 @@ def test_missing_file_raises_error(temp_dir):
     non_existent = temp_dir / "does_not_exist.png"
     with pytest.raises(FileNotFoundError):
         sanitize_image(non_existent)
+
+
+def test_cli_parser_user_syntax():
+    parser = create_parser()
+    # The exact command the user entered:
+    args = parser.parse_args([
+        "--batch", "./images",
+        "--output-dir", "./cleaned_folder",
+        "--recursive",
+        "--f", "auto"
+    ])
+    assert args.batch == "./images"
+    assert args.output == "./cleaned_folder"
+    assert args.recursive is True
+    assert args.format == "auto"
+
+    # Positional directory syntax:
+    args2 = parser.parse_args(["./images", "-o", "./cleaned"])
+    assert args2.path == "./images"
+    assert args2.output == "./cleaned"
